@@ -1,36 +1,33 @@
 package hexlet.code.schemas;
 
 import java.util.Map;
-import java.util.function.Predicate;
 
 public final class MapSchema extends BaseSchema {
 
-    public MapSchema() {
-        Predicate<Object> init = o -> o instanceof Map<?, ?>;
-        addRequirement(SchemaName.INITIAL, init);
-    }
-
-    public MapSchema required() {
-        required = true;
+    @Override
+    MapSchema typeCheck() {
+        addValidityCheck("typeCheck", (map -> map instanceof Map || map == null));
         return this;
     }
 
     public MapSchema sizeof(int size) {
-        Predicate<Object> currentSizePredicate = o -> ((Map<?, ?>) o).size() == size;
-        addRequirement(SchemaName.SIZE_OF, currentSizePredicate);
+        addValidityCheck("sizeof", (map -> map == null || ((Map<?, ?>) map).size()  == size));
         return this;
     }
 
-    public MapSchema shape(Map<String, BaseSchema> schemeMap) {
-        Predicate<Object> currentShapePredicate = o -> schemeMap
-                .entrySet()
-                .stream()
-                .allMatch(entry -> {
-                    Object valueToCheck = ((Map<?, ?>) o).get(entry.getKey());
-                    return entry.getValue().isValid(valueToCheck);
-                });
-
-        addRequirement(SchemaName.SHAPE, currentShapePredicate);
+    public MapSchema shape(Map<String, BaseSchema> schemas) {
+        addValidityCheck("shape ", map -> {
+                Map<?, ?> contentMap = (Map<?, ?>) map;
+                for (Map.Entry<String, BaseSchema> entry: schemas.entrySet()) {
+                    String parameterName = entry.getKey();
+                    BaseSchema currentSchema = entry.getValue();
+                    if (!currentSchema.isValid(contentMap.get(parameterName))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        );
         return this;
     }
 }

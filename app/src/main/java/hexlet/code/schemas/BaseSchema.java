@@ -2,26 +2,34 @@ package hexlet.code.schemas;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 public abstract class BaseSchema {
-    private final Map<SchemaName, Predicate<Object>> requirements = new LinkedHashMap<>();
-    protected boolean required = false;
+    private Map<String, Predicate<Object>> validityChecks;
 
-    public final boolean isValid(Object obj) {
-        if (!required && obj == null) {
-            return true;
-        }
-        for (Predicate<Object> req : requirements.values()) {
-            if (!req.test(obj)) {
-                return false;
-            }
-        }
-        return true;
+    public BaseSchema() {
+        this.validityChecks = new LinkedHashMap<>();
+        this.typeCheck();
     }
 
-    protected final void addRequirement(SchemaName name, Predicate<Object> req) {
-        requirements.put(name, req);
+    abstract BaseSchema typeCheck();
+
+    /**
+     * @return Schema object with added check for not null
+     */
+    public BaseSchema required() {
+        addValidityCheck("required", (Objects::nonNull));
+        return  this;
+    }
+
+    public final void addValidityCheck(String checkName, Predicate<Object> method) {
+        validityChecks.put(checkName, method);
+    }
+
+    public final boolean isValid(Object object) {
+        return validityChecks.values()
+                .stream()
+                .allMatch(check -> check.test(object));
     }
 }
-
